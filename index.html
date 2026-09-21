@@ -1,0 +1,957 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <meta name="description" content="Feliz día de las Flores Amarillas, Neyda. Un ramo de estrellas hecho con Three.js.">
+    <meta name="theme-color" content="#0d0719">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="Flores Amarillas">
+    <meta property="og:title" content="Feliz día de las Flores Amarillas, Neyda">
+    <meta property="og:description" content="El 21 de septiembre se regala una flor amarilla: quien la recibe sabe que su amor es correspondido.">
+    <meta property="og:type" content="website">
+    <meta property="og:image" content="og-image.webp">
+    <meta name="twitter:card" content="summary_large_image">
+    <title>Flores Amarillas para Neyda</title>
+    <link rel="icon" type="image/svg+xml" href="favicon.svg">
+    <link rel="apple-touch-icon" href="icon-192.png">
+    <link rel="manifest" href="manifest.webmanifest">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&family=Quicksand:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --sun: #FFD23F;
+            --sun-soft: #FFE088;
+            --amber: #FFB347;
+            --dark: #020210;
+        }
+        * { box-sizing: border-box; }
+        body {
+            margin: 0;
+            overflow: hidden;
+            font-family: 'Poppins', 'Quicksand', 'Segoe UI', sans-serif;
+            color: #fff;
+            background: var(--dark);
+            -webkit-tap-highlight-color: transparent;
+        }
+        canvas { display: block; }
+
+        .sun-icon {
+            position: relative;
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            background: repeating-conic-gradient(from 0deg, var(--sun) 0deg 26deg, #f5a623 26deg 52deg);
+            box-shadow: 0 0 24px rgba(255, 178, 71, .55);
+            margin: 0 auto 10px;
+        }
+        .sun-icon::after {
+            content: "";
+            position: absolute;
+            inset: 15px;
+            border-radius: 50%;
+            background: radial-gradient(circle at 40% 35%, #9a5a16, #5c3009 70%);
+        }
+        .sun-icon--sm { width: 40px; height: 40px; }
+        .sun-icon--sm::after { inset: 12px; }
+
+        .greeting {
+            position: absolute;
+            top: 26px;
+            left: 0;
+            right: 0;
+            text-align: center;
+            pointer-events: none;
+            z-index: 20;
+        }
+        .greeting h1 {
+            margin: 0;
+            font-size: 2.4rem;
+            font-weight: 800;
+            letter-spacing: -0.5px;
+            background: linear-gradient(135deg, #FFE55C, var(--amber));
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            -webkit-text-fill-color: transparent;
+            filter: drop-shadow(0 0 14px rgba(255, 170, 51, .35));
+            animation: fadeInDown 1s ease-out;
+        }
+        .greeting small {
+            display: block;
+            margin-top: 6px;
+            font-size: 1.05rem;
+            font-weight: 500;
+            color: #FFDE7A;
+            text-shadow: 0 0 10px rgba(0, 0, 0, .7);
+            letter-spacing: .5px;
+            animation: fadeInDown 1.2s ease-out;
+        }
+        @keyframes fadeInDown {
+            from { opacity: 0; transform: translateY(-26px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .badge-control {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            background: rgba(10, 6, 22, .55);
+            backdrop-filter: blur(5px);
+            -webkit-backdrop-filter: blur(5px);
+            border-radius: 40px;
+            padding: 6px 16px;
+            font-size: .7rem;
+            pointer-events: none;
+            font-weight: 500;
+            color: var(--sun);
+            border: 1px solid rgba(255, 217, 102, .5);
+            z-index: 15;
+        }
+        .control-hint {
+            position: absolute;
+            bottom: 22px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(10, 6, 22, .55);
+            backdrop-filter: blur(4px);
+            -webkit-backdrop-filter: blur(4px);
+            padding: 5px 12px;
+            border-radius: 30px;
+            font-size: .68rem;
+            pointer-events: none;
+            white-space: nowrap;
+            letter-spacing: .5px;
+            color: #FFE0A3;
+            z-index: 15;
+        }
+
+        .music-btn {
+            position: absolute;
+            top: 18px;
+            right: 18px;
+            width: 54px;
+            height: 54px;
+            border-radius: 50%;
+            border: none;
+            cursor: pointer;
+            z-index: 30;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(135deg, var(--sun), var(--amber));
+            box-shadow: 0 4px 18px rgba(255, 178, 71, .55);
+            transition: transform .2s ease, box-shadow .2s ease;
+        }
+        .music-btn:hover { transform: scale(1.06); box-shadow: 0 6px 24px rgba(255, 178, 71, .75); }
+        .eq { display: flex; align-items: flex-end; gap: 3px; height: 18px; }
+        .eq span { width: 4px; background: #4d2b05; border-radius: 2px; height: 8px; }
+        .music-btn.playing .eq span { animation: eq 1s ease-in-out infinite; }
+        .music-btn.playing .eq span:nth-child(2) { animation-delay: .25s; }
+        .music-btn.playing .eq span:nth-child(3) { animation-delay: .5s; }
+        @keyframes eq { 0%,100% { height: 6px; } 50% { height: 18px; } }
+
+        .msg-fab {
+            position: absolute;
+            right: 18px;
+            bottom: 20px;
+            padding: 10px 16px;
+            border-radius: 30px;
+            background: rgba(10, 6, 22, .6);
+            border: 1px solid rgba(255, 217, 102, .55);
+            color: var(--sun);
+            font-family: inherit;
+            font-size: .78rem;
+            font-weight: 600;
+            cursor: pointer;
+            z-index: 28;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity .4s ease, visibility .4s ease;
+            backdrop-filter: blur(5px);
+            -webkit-backdrop-filter: blur(5px);
+        }
+        .msg-fab.show { opacity: 1; visibility: visible; }
+
+        .intro-overlay {
+            position: fixed;
+            inset: 0;
+            z-index: 60;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            padding: 24px;
+            background: radial-gradient(circle at 50% 40%, rgba(255, 178, 71, .16), rgba(2, 2, 16, .94) 62%);
+            transition: opacity .7s ease, visibility .7s ease;
+        }
+        .intro-overlay.hide { opacity: 0; visibility: hidden; pointer-events: none; }
+        .intro-title {
+            margin: 12px 0 4px;
+            font-size: clamp(1.7rem, 6vw, 2.8rem);
+            font-weight: 800;
+            background: linear-gradient(135deg, #FFE55C, var(--amber));
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            -webkit-text-fill-color: transparent;
+            filter: drop-shadow(0 0 16px rgba(255, 170, 51, .3));
+        }
+        .intro-sub {
+            margin: 0 0 26px;
+            font-size: .95rem;
+            font-weight: 400;
+            color: #FFDE7A;
+            max-width: 420px;
+            line-height: 1.5;
+        }
+        .intro-btn {
+            font-family: inherit;
+            font-size: .95rem;
+            font-weight: 700;
+            letter-spacing: .5px;
+            color: #3a2406;
+            background: linear-gradient(135deg, var(--sun), var(--amber));
+            border: none;
+            border-radius: 40px;
+            padding: 14px 34px;
+            cursor: pointer;
+            box-shadow: 0 6px 22px rgba(255, 178, 71, .5);
+            transition: transform .2s ease, box-shadow .2s ease;
+        }
+        .intro-btn:hover { transform: translateY(-2px); box-shadow: 0 10px 28px rgba(255, 178, 71, .65); }
+        .intro-hint {
+            margin-top: 22px;
+            font-size: .72rem;
+            color: rgba(255, 224, 163, .8);
+            letter-spacing: .5px;
+        }
+
+        .final-card {
+            position: fixed;
+            left: 50%;
+            top: 50%;
+            transform: translate(-50%, -46%) scale(.94);
+            z-index: 70;
+            max-width: 90vw;
+            width: 480px;
+            background: linear-gradient(160deg, rgba(40, 22, 4, .92), rgba(10, 6, 24, .96));
+            border: 1px solid rgba(255, 217, 102, .55);
+            border-radius: 24px;
+            padding: 34px 28px 28px;
+            text-align: center;
+            box-shadow: 0 18px 60px rgba(0, 0, 0, .55), 0 0 40px rgba(255, 178, 71, .15);
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity .6s ease, transform .6s ease, visibility .6s ease;
+            max-height: 88vh;
+            overflow: auto;
+        }
+        .final-card.open { opacity: 1; visibility: visible; transform: translate(-50%, -50%) scale(1); }
+        .final-card h2 {
+            margin: 4px 0 10px;
+            font-size: clamp(1.5rem, 5vw, 2rem);
+            font-weight: 700;
+            background: linear-gradient(135deg, #FFE55C, var(--amber));
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            -webkit-text-fill-color: transparent;
+        }
+        .final-card p { font-size: .92rem; line-height: 1.65; color: #fff; margin: 10px 0; font-weight: 400; }
+        .final-card .final-sign {
+            margin-top: 16px;
+            font-family: 'Quicksand', sans-serif;
+            font-weight: 600;
+            font-size: .95rem;
+            color: var(--sun-soft);
+        }
+        .final-link {
+            display: inline-block;
+            margin-top: 18px;
+            font-size: .8rem;
+            color: #c9a3f0;
+            text-decoration: none;
+            border-bottom: 1px dashed rgba(201, 163, 240, .5);
+            padding-bottom: 2px;
+        }
+        .final-link:hover { color: #e0c8f7; }
+        .final-close {
+            position: absolute;
+            top: 14px;
+            right: 14px;
+            width: 34px;
+            height: 34px;
+            border-radius: 50%;
+            border: 1px solid rgba(255, 217, 102, .4);
+            background: rgba(0, 0, 0, .35);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .final-close i { position: relative; width: 14px; height: 14px; }
+        .final-close i::before, .final-close i::after {
+            content: "";
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            width: 14px;
+            height: 2px;
+            background: var(--sun);
+            border-radius: 2px;
+        }
+        .final-close i::before { transform: translate(-50%, -50%) rotate(45deg); }
+        .final-close i::after { transform: translate(-50%, -50%) rotate(-45deg); }
+
+        #petalLayer {
+            position: fixed;
+            inset: 0;
+            pointer-events: none;
+            z-index: 55;
+            overflow: hidden;
+        }
+        .petal {
+            position: fixed;
+            border-radius: 80% 20% 70% 30% / 60% 40% 60% 40%;
+            opacity: .95;
+            pointer-events: none;
+            box-shadow: 0 0 6px rgba(255, 210, 63, .35);
+            animation: petalFly 1.2s cubic-bezier(.22, .6, .36, 1) forwards;
+        }
+        @keyframes petalFly {
+            0% { transform: translate(0, 0) rotate(0deg) scale(1); opacity: .95; }
+            100% { transform: translate(var(--drift), var(--lift)) rotate(240deg) scale(.55); opacity: 0; }
+        }
+
+        @media (max-width: 700px) {
+            .greeting { top: 18px; }
+            .greeting h1 { font-size: 1.5rem; }
+            .greeting small { font-size: .8rem; }
+            .badge-control { font-size: .58rem; bottom: 16px; left: 14px; }
+            .control-hint { font-size: .58rem; bottom: 18px; }
+            .music-btn { top: 12px; right: 12px; width: 48px; height: 48px; }
+        }
+        @media (prefers-reduced-motion: reduce) {
+            .greeting h1, .greeting small { animation: none; }
+            *.petal { animation-duration: .5s; }
+        }
+    </style>
+</head>
+<body>
+
+    <div id="petalLayer"></div>
+
+    <div class="greeting">
+        <div class="sun-icon"></div>
+        <h1>Feliz día de las Flores Amarillas</h1>
+        <small>Un ramo de estrellas para Neyda</small>
+    </div>
+
+    <div class="badge-control">360°  |  Galaxia de Girasoles</div>
+    <div class="control-hint" id="controlHint">Arrastra para rotar 360°  |  Zoom con scroll</div>
+
+    <button class="music-btn" id="musicBtn" aria-label="Música">
+        <span class="eq"><span></span><span></span><span></span></span>
+    </button>
+
+    <audio id="bgMusic" loop preload="none">
+        <source src="musica.mp3" type="audio/mpeg">
+    </audio>
+
+    <button class="msg-fab" id="msgFab">Tu mensaje</button>
+
+    <div class="intro-overlay" id="introOverlay">
+        <div class="sun-icon"></div>
+        <h2 class="intro-title">Abrir mi ramo</h2>
+        <p class="intro-sub">El 21 de septiembre se regala una flor amarilla: quien la recibe sabe que su amor es correspondido. Este es el tuyo.</p>
+        <button class="intro-btn" id="openRamo">Abrir mi ramo</button>
+        <p class="intro-hint" id="introHint">Toca la pantalla para deshojar flores</p>
+    </div>
+
+    <div class="final-card" id="finalCard">
+        <button class="final-close" id="finalClose" aria-label="Cerrar"><i></i></button>
+        <div class="sun-icon sun-icon--sm"></div>
+        <h2>Para ti, Neyda</h2>
+        <p>Un día pediste que te hiciera muchas flores en todo el cuerpo, así que aquí las tienes: una galaxia entera, hecha de estrellas que solo quieren mirarte a ti.</p>
+        <p>Feliz día de las flores amarillas, chipi. Que cada día te recuerde lo mucho que te quiero.</p>
+        <p class="final-sign">Con todo mi amor · Andres</p>
+        <a class="final-link" href="https://herles0601.github.io/para-mi-preciosa/" target="_blank" rel="noopener">Nuestros dos meses también están aquí</a>
+    </div>
+
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://unpkg.com/three@0.128.0/build/three.module.js",
+                "three/addons/": "https://unpkg.com/three@0.128.0/examples/jsm/"
+            }
+        }
+    </script>
+
+    <script type="module">
+        import * as THREE from 'three';
+        import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+        import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
+        import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
+        import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
+
+        const isMobile = Math.min(window.innerWidth, window.innerHeight) < 700 || 'ontouchstart' in window;
+        const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+        document.getElementById('controlHint').textContent = isMobile
+            ? 'Arrastra para rotar 360°  |  Pellizca para acercar'
+            : 'Arrastra para rotar 360°  |  Zoom con scroll';
+        document.getElementById('introHint').textContent = isMobile
+            ? 'Toca la pantalla para deshojar flores'
+            : 'Toca o arrastra la pantalla para deshojar flores';
+
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x020210);
+        scene.fog = new THREE.FogExp2(0x020210, 0.00045);
+
+        const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 2000);
+        camera.position.set(13, 6, 18);
+        camera.lookAt(0, 0, 0);
+
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        renderer.toneMapping = THREE.ReinhardToneMapping;
+        renderer.toneMappingExposure = 1.3;
+        document.body.appendChild(renderer.domElement);
+
+        const renderScene = new RenderPass(scene, camera);
+        const bloomPass = new UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 1.2, 0.4, 0.85);
+        bloomPass.threshold = 0.08;
+        bloomPass.strength = isMobile ? 0.45 : 0.75;
+        bloomPass.radius = isMobile ? 0.5 : 0.6;
+        const effectComposer = new EffectComposer(renderer);
+        effectComposer.addPass(renderScene);
+        effectComposer.addPass(bloomPass);
+
+        const controls = new OrbitControls(camera, renderer.domElement);
+        controls.enableDamping = true;
+        controls.dampingFactor = 0.06;
+        controls.rotateSpeed = 1.2;
+        controls.zoomSpeed = 1.0;
+        controls.panSpeed = 0.5;
+        controls.enableZoom = true;
+        controls.autoRotate = !reducedMotion;
+        controls.autoRotateSpeed = 0.65;
+        controls.target.set(0, 0.5, 0);
+
+        let autoRotateTimer = null;
+        controls.addEventListener('start', () => {
+            controls.autoRotate = false;
+            clearTimeout(autoRotateTimer);
+        });
+        controls.addEventListener('end', () => {
+            clearTimeout(autoRotateTimer);
+            if (reducedMotion) return;
+            autoRotateTimer = setTimeout(() => { controls.autoRotate = true; }, 4000);
+        });
+
+        function createFlowerTexture(type) {
+            const canvas = document.createElement('canvas');
+            canvas.width = 128;
+            canvas.height = 128;
+            const ctx = canvas.getContext('2d');
+            ctx.clearRect(0, 0, 128, 128);
+            const cx = 64, cy = 64;
+
+            if (type === 0) {
+                for (let i = 0; i < 6; i++) {
+                    const angle = (i / 6) * Math.PI * 2;
+                    const px = cx + Math.cos(angle) * 32;
+                    const py = cy + Math.sin(angle) * 32;
+                    ctx.beginPath();
+                    ctx.ellipse(px, py, 22, 28, angle, 0, Math.PI * 2);
+                    ctx.fillStyle = '#FFE55C';
+                    ctx.fill();
+                }
+            } else if (type === 1) {
+                for (let i = 0; i < 8; i++) {
+                    const angle = (i / 8) * Math.PI * 2;
+                    const px = cx + Math.cos(angle) * 38;
+                    const py = cy + Math.sin(angle) * 38;
+                    ctx.save();
+                    ctx.translate(px, py);
+                    ctx.rotate(angle);
+                    ctx.beginPath();
+                    ctx.ellipse(0, 0, 16, 30, 0, 0, Math.PI * 2);
+                    ctx.fillStyle = '#FFD966';
+                    ctx.fill();
+                    ctx.restore();
+                }
+            } else {
+                for (let i = 0; i < 12; i++) {
+                    const angle = (i / 12) * Math.PI * 2;
+                    const px = cx + Math.cos(angle) * 28;
+                    const py = cy + Math.sin(angle) * 28;
+                    ctx.beginPath();
+                    ctx.ellipse(px, py, 14, 18, angle, 0, Math.PI * 2);
+                    ctx.fillStyle = '#FFE088';
+                    ctx.fill();
+                }
+            }
+            ctx.beginPath();
+            ctx.arc(cx, cy, 16, 0, 2 * Math.PI);
+            ctx.fillStyle = '#FF8C42';
+            ctx.fill();
+            ctx.beginPath();
+            ctx.arc(cx, cy, 10, 0, 2 * Math.PI);
+            ctx.fillStyle = '#D2691E';
+            ctx.fill();
+            ctx.fillStyle = '#FFF2B5';
+            for (let i = 0; i < 20; i++) {
+                const rad = Math.random() * 12;
+                const ang = Math.random() * Math.PI * 2;
+                const x = cx + Math.cos(ang) * rad;
+                const y = cy + Math.sin(ang) * rad;
+                ctx.beginPath();
+                ctx.arc(x, y, 1.2, 0, 2 * Math.PI);
+                ctx.fill();
+            }
+            const texture = new THREE.CanvasTexture(canvas);
+            texture.needsUpdate = true;
+            return texture;
+        }
+
+        const flowerTextures = [
+            createFlowerTexture(0),
+            createFlowerTexture(1),
+            createFlowerTexture(2)
+        ];
+
+        const TOTAL_FLOWERS = isMobile ? 9000 : 18500;
+        const positions = new Float32Array(TOTAL_FLOWERS * 3);
+        const colors = new Float32Array(TOTAL_FLOWERS * 3);
+        const sizes = new Float32Array(TOTAL_FLOWERS);
+        const texIndices = new Float32Array(TOTAL_FLOWERS);
+
+        const arms = 4;
+        const spiralTightness = 2.6;
+        const armSpread = 0.58;
+        const innerRadius = 1.0;
+        const outerRadius = 16.2;
+
+        for (let i = 0; i < TOTAL_FLOWERS; i++) {
+            let radius, angle, yOffset;
+            const isCore = Math.random() < 0.2;
+            if (isCore) {
+                radius = Math.pow(Math.random(), 1.3) * 3.8;
+                angle = Math.random() * Math.PI * 2;
+                yOffset = (Math.random() - 0.5) * 1.9 * (1 - radius / 5);
+            } else {
+                const armIdx = Math.floor(Math.random() * arms);
+                const armAngleOffset = (armIdx / arms) * Math.PI * 2;
+                const t = Math.pow(Math.random(), 1.1);
+                radius = innerRadius + t * (outerRadius - innerRadius);
+                const spiralAngle = spiralTightness * Math.log(radius + 0.6) + armAngleOffset;
+                const randomAngleOffset = (Math.random() - 0.5) * armSpread * (1 + radius * 0.08);
+                angle = spiralAngle + randomAngleOffset;
+                yOffset = Math.sin(radius * 1.4 + armIdx) * 0.85 + (Math.random() - 0.5) * 0.8;
+                if (Math.random() > 0.7) yOffset += (Math.random() - 0.5) * 0.9;
+            }
+            const x = Math.cos(angle) * radius;
+            const z = Math.sin(angle) * radius;
+            const y = yOffset * 1.3;
+            positions[i * 3] = x;
+            positions[i * 3 + 1] = y;
+            positions[i * 3 + 2] = z;
+
+            const distFactor = Math.min(1, Math.sqrt(x * x + y * y + z * z) / 14);
+            let r = 1.0, g = 0.7 + Math.random() * 0.3, b = 0.1 + Math.random() * 0.3;
+            if (distFactor < 0.3) { g = 0.55 + Math.random() * 0.2; b = 0.08; }
+            if (distFactor > 0.7) { g = 0.92; b = 0.45; }
+            colors[i * 3] = r;
+            colors[i * 3 + 1] = g;
+            colors[i * 3 + 2] = b;
+
+            let sizeVal = 0.28 + Math.random() * 0.48;
+            if (distFactor < 0.3) sizeVal *= 0.85;
+            if (distFactor > 0.8) sizeVal *= 1.25;
+            if (Math.random() > 0.93) sizeVal *= 1.55;
+            sizes[i] = sizeVal;
+            texIndices[i] = Math.floor(Math.random() * flowerTextures.length);
+        }
+
+        const flowerGeometry = new THREE.BufferGeometry();
+        flowerGeometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+        flowerGeometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+        flowerGeometry.setAttribute('size', new THREE.BufferAttribute(sizes, 1));
+        flowerGeometry.setAttribute('texIndex', new THREE.BufferAttribute(texIndices, 1));
+
+        const vertexShader = `
+            attribute float size;
+            attribute vec3 color;
+            attribute float texIndex;
+            varying vec3 vColor;
+            varying float vTexIndex;
+            void main() {
+                vColor = color;
+                vTexIndex = texIndex;
+                vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
+                gl_PointSize = size * ( 300.0 / ( - mvPosition.z ) ) * 0.95;
+                gl_PointSize = clamp(gl_PointSize, 7.0, 48.0);
+                gl_Position = projectionMatrix * mvPosition;
+            }
+        `;
+
+        const fragmentShader = `
+            uniform sampler2D uTextures[3];
+            varying vec3 vColor;
+            varying float vTexIndex;
+            void main() {
+                int idx = int(round(vTexIndex));
+                vec4 texColor;
+                if (idx == 0) texColor = texture2D(uTextures[0], gl_PointCoord);
+                else if (idx == 1) texColor = texture2D(uTextures[1], gl_PointCoord);
+                else texColor = texture2D(uTextures[2], gl_PointCoord);
+                if (texColor.a < 0.2) discard;
+                vec3 finalColor = vColor * texColor.rgb;
+                finalColor += vec3(0.2, 0.12, 0.04);
+                gl_FragColor = vec4(finalColor, texColor.a * 0.95);
+            }
+        `;
+
+        const flowerMaterial = new THREE.ShaderMaterial({
+            uniforms: { uTextures: { value: flowerTextures } },
+            vertexShader: vertexShader,
+            fragmentShader: fragmentShader,
+            transparent: true,
+            depthWrite: false,
+            blending: THREE.AdditiveBlending
+        });
+
+        const flowerPoints = new THREE.Points(flowerGeometry, flowerMaterial);
+        scene.add(flowerPoints);
+
+        function createSunflower(x, z, yOffset, scaleFactor) {
+            const group = new THREE.Group();
+
+            const stemGeo = new THREE.CylinderGeometry(0.12 * scaleFactor, 0.18 * scaleFactor, 1.1 * scaleFactor, 6);
+            const stemMat = new THREE.MeshStandardMaterial({ color: 0x5a9e4e, roughness: 0.6, metalness: 0.1 });
+            const stem = new THREE.Mesh(stemGeo, stemMat);
+            stem.position.y = -0.55 * scaleFactor;
+            group.add(stem);
+
+            const leafMat = new THREE.MeshStandardMaterial({ color: 0x6ab04c });
+            const leaf1Geo = new THREE.BoxGeometry(0.35 * scaleFactor, 0.08 * scaleFactor, 0.2 * scaleFactor);
+            const leaf1 = new THREE.Mesh(leaf1Geo, leafMat);
+            leaf1.position.set(0.25 * scaleFactor, -0.3 * scaleFactor, 0);
+            leaf1.rotation.z = 0.5;
+            group.add(leaf1);
+
+            const leaf2 = new THREE.Mesh(leaf1Geo, leafMat);
+            leaf2.position.set(-0.25 * scaleFactor, -0.3 * scaleFactor, 0);
+            leaf2.rotation.z = -0.5;
+            group.add(leaf2);
+
+            const centerGeo = new THREE.SphereGeometry(0.28 * scaleFactor, 16, 16);
+            const centerMat = new THREE.MeshStandardMaterial({ color: 0xb5651d, emissive: 0x7a3e0a, emissiveIntensity: 0.25 });
+            const center = new THREE.Mesh(centerGeo, centerMat);
+            center.position.y = 0.1 * scaleFactor;
+            group.add(center);
+
+            const petalMat = new THREE.MeshStandardMaterial({ color: 0xffcc44, emissive: 0xffaa33, emissiveIntensity: 0.2 });
+            for (let i = 0; i < 14; i++) {
+                const angle = (i / 14) * Math.PI * 2;
+                const petalGeo = new THREE.CylinderGeometry(0.22 * scaleFactor, 0.24 * scaleFactor, 0.6 * scaleFactor, 5);
+                const petal = new THREE.Mesh(petalGeo, petalMat);
+                petal.position.x = Math.cos(angle) * 0.48 * scaleFactor;
+                petal.position.z = Math.sin(angle) * 0.48 * scaleFactor;
+                petal.position.y = 0.05 * scaleFactor;
+                petal.rotation.z = angle;
+                petal.rotation.x = 0.4;
+                group.add(petal);
+            }
+            for (let i = 0; i < 10; i++) {
+                const angle = (i / 10) * Math.PI * 2 + 0.3;
+                const petalGeo = new THREE.CylinderGeometry(0.16 * scaleFactor, 0.18 * scaleFactor, 0.5 * scaleFactor, 5);
+                const petal = new THREE.Mesh(petalGeo, petalMat);
+                petal.position.x = Math.cos(angle) * 0.62 * scaleFactor;
+                petal.position.z = Math.sin(angle) * 0.62 * scaleFactor;
+                petal.position.y = 0.02 * scaleFactor;
+                petal.rotation.z = angle;
+                petal.rotation.x = 0.3;
+                group.add(petal);
+            }
+
+            group.position.set(x, yOffset, z);
+            group.rotation.y = Math.random() * Math.PI * 2;
+            return group;
+        }
+
+        const sunflowerPositions = [];
+        for (let i = 0; i < 8; i++) {
+            const angle = (i / 8) * Math.PI * 2;
+            const radius = 1.8 + Math.random() * 1.2;
+            const x = Math.cos(angle) * radius;
+            const z = Math.sin(angle) * radius;
+            sunflowerPositions.push({ x, z, y: -0.2 + Math.random() * 0.5, scale: 0.9 + Math.random() * 0.3 });
+        }
+        const armAngles = [0, Math.PI / 2, Math.PI, 3 * Math.PI / 2];
+        for (let a = 0; a < armAngles.length; a++) {
+            for (let r = 3.5; r <= 12; r += 2.2) {
+                const angleOffset = armAngles[a];
+                const spiralBase = spiralTightness * Math.log(r + 0.8);
+                const angle = spiralBase + angleOffset + (Math.random() - 0.5) * 0.8;
+                const x = Math.cos(angle) * r;
+                const z = Math.sin(angle) * r;
+                const y = Math.sin(r * 1.2) * 0.4 + (Math.random() - 0.5) * 0.4;
+                sunflowerPositions.push({ x, z, y: y - 0.1, scale: 0.8 + Math.random() * 0.5 });
+            }
+        }
+        for (let i = 0; i < 12; i++) {
+            const rad = 6 + Math.random() * 7;
+            const ang = Math.random() * Math.PI * 2;
+            const x = Math.cos(ang) * rad;
+            const z = Math.sin(ang) * rad;
+            const y = (Math.random() - 0.5) * 1.2;
+            sunflowerPositions.push({ x, z, y: y, scale: 0.7 + Math.random() * 0.6 });
+        }
+
+        const sunflowersGroup = new THREE.Group();
+        sunflowerPositions.forEach(pos => {
+            const sunflower = createSunflower(pos.x, pos.z, pos.y, pos.scale);
+            sunflowersGroup.add(sunflower);
+        });
+        scene.add(sunflowersGroup);
+
+        const pollenCount = isMobile ? 800 : 1800;
+        const pollenPositions = new Float32Array(pollenCount * 3);
+        for (let i = 0; i < pollenCount; i++) {
+            const idx = Math.floor(Math.random() * sunflowerPositions.length);
+            const base = sunflowerPositions[idx];
+            pollenPositions[i * 3] = base.x + (Math.random() - 0.5) * 1.2;
+            pollenPositions[i * 3 + 1] = base.y + (Math.random() - 0.5) * 1.0 + 0.2;
+            pollenPositions[i * 3 + 2] = base.z + (Math.random() - 0.5) * 1.2;
+        }
+        const pollenGeo = new THREE.BufferGeometry();
+        pollenGeo.setAttribute('position', new THREE.BufferAttribute(pollenPositions, 3));
+        const pollenMat = new THREE.PointsMaterial({ color: 0xffdd88, size: 0.05, transparent: true, blending: THREE.AdditiveBlending });
+        const pollenPoints = new THREE.Points(pollenGeo, pollenMat);
+        scene.add(pollenPoints);
+
+        const starCount = isMobile ? 2500 : 4500;
+        const starPositionsArr = new Float32Array(starCount * 3);
+        const starColorsArr = new Float32Array(starCount * 3);
+        for (let i = 0; i < starCount; i++) {
+            const rad = 40 + Math.random() * 55;
+            const theta = Math.random() * Math.PI * 2;
+            const phi = Math.acos(2 * Math.random() - 1);
+            starPositionsArr[i * 3] = rad * Math.sin(phi) * Math.cos(theta);
+            starPositionsArr[i * 3 + 1] = rad * Math.sin(phi) * Math.sin(theta) * 0.5;
+            starPositionsArr[i * 3 + 2] = rad * Math.cos(phi);
+            const intens = 0.4 + Math.random() * 0.8;
+            starColorsArr[i * 3] = intens * (Math.random() > 0.6 ? 1.0 : 0.7);
+            starColorsArr[i * 3 + 1] = intens * (Math.random() > 0.5 ? 0.9 : 0.6);
+            starColorsArr[i * 3 + 2] = intens * 0.5;
+        }
+        const starGeo = new THREE.BufferGeometry();
+        starGeo.setAttribute('position', new THREE.BufferAttribute(starPositionsArr, 3));
+        starGeo.setAttribute('color', new THREE.BufferAttribute(starColorsArr, 3));
+        const starMatObj = new THREE.PointsMaterial({ size: 0.16, vertexColors: true, transparent: true, opacity: 0.7, blending: THREE.AdditiveBlending });
+        const starsField = new THREE.Points(starGeo, starMatObj);
+        scene.add(starsField);
+
+        const dustCount = isMobile ? 3500 : 8000;
+        const dustPositions = new Float32Array(dustCount * 3);
+        for (let i = 0; i < dustCount; i++) {
+            const radius = 5 + Math.random() * 14;
+            const ang = Math.random() * Math.PI * 2;
+            const y = (Math.random() - 0.5) * 4.5;
+            dustPositions[i * 3] = Math.cos(ang) * radius * (0.6 + Math.random() * 0.7);
+            dustPositions[i * 3 + 1] = y + (Math.random() - 0.5) * 1.5;
+            dustPositions[i * 3 + 2] = Math.sin(ang) * radius * (0.6 + Math.random() * 0.7);
+        }
+        const dustGeoObj = new THREE.BufferGeometry();
+        dustGeoObj.setAttribute('position', new THREE.BufferAttribute(dustPositions, 3));
+        const dustMatObj = new THREE.PointsMaterial({ color: 0xffaa66, size: 0.055, transparent: true, opacity: 0.4, blending: THREE.AdditiveBlending });
+        const dustCloud = new THREE.Points(dustGeoObj, dustMatObj);
+        scene.add(dustCloud);
+
+        const coreGlow = new THREE.Mesh(
+            new THREE.SphereGeometry(1.4, 32, 32),
+            new THREE.MeshStandardMaterial({ color: 0xffaa44, emissive: 0xff6600, emissiveIntensity: 1.6, roughness: 0.2 })
+        );
+        scene.add(coreGlow);
+
+        const haloCount = isMobile ? 900 : 1500;
+        const haloPositions = new Float32Array(haloCount * 3);
+        for (let i = 0; i < haloCount; i++) {
+            const rad = 1.8 + Math.random() * 2.2;
+            const theta = Math.random() * Math.PI * 2;
+            const phi = Math.acos(2 * Math.random() - 1);
+            haloPositions[i * 3] = rad * Math.sin(phi) * Math.cos(theta);
+            haloPositions[i * 3 + 1] = rad * Math.sin(phi) * Math.sin(theta) * 0.7;
+            haloPositions[i * 3 + 2] = rad * Math.cos(phi);
+        }
+        const haloGeo = new THREE.BufferGeometry();
+        haloGeo.setAttribute('position', new THREE.BufferAttribute(haloPositions, 3));
+        const haloMatPoints = new THREE.PointsMaterial({ color: 0xffaa77, size: 0.08, blending: THREE.AdditiveBlending });
+        const haloRing = new THREE.Points(haloGeo, haloMatPoints);
+        scene.add(haloRing);
+
+        const ambientLight = new THREE.AmbientLight(0x221100);
+        scene.add(ambientLight);
+        const pointLight = new THREE.PointLight(0xffaa55, 1.2, 30);
+        pointLight.position.set(2, 1.5, 2);
+        scene.add(pointLight);
+        const backLight = new THREE.PointLight(0xffaa66, 0.7);
+        backLight.position.set(-3, 2, -5);
+        scene.add(backLight);
+        const fillLight = new THREE.PointLight(0xffcc88, 0.6);
+        fillLight.position.set(1, 3, 3);
+        scene.add(fillLight);
+
+        const petalLayer = document.getElementById('petalLayer');
+        const petalColors = ['#FFD23F', '#FFE088', '#FFB347', '#F5A623', '#FFDE7A'];
+        function burstPetals(x, y, count) {
+            if (!petalLayer || reducedMotion) return;
+            for (let i = 0; i < count; i++) {
+                const p = document.createElement('div');
+                p.className = 'petal';
+                const size = 8 + Math.random() * 9;
+                p.style.left = (x + (Math.random() - 0.5) * 70) + 'px';
+                p.style.top = y + 'px';
+                p.style.width = size + 'px';
+                p.style.height = (size * 1.25) + 'px';
+                p.style.setProperty('--drift', ((Math.random() - 0.5) * 140) + 'px');
+                p.style.setProperty('--lift', -(50 + Math.random() * 130) + 'px');
+                p.style.animationDuration = (0.9 + Math.random() * 0.85) + 's';
+                p.style.background = petalColors[Math.floor(Math.random() * petalColors.length)];
+                petalLayer.appendChild(p);
+                setTimeout(() => p.remove(), 2000);
+            }
+        }
+
+        const overlay = document.getElementById('introOverlay');
+        const openRamoBtn = document.getElementById('openRamo');
+        openRamoBtn.addEventListener('click', () => {
+            overlay.classList.add('hide');
+            burstPetals(window.innerWidth / 2, window.innerHeight / 2, isMobile ? 26 : 40);
+        });
+
+        document.addEventListener('pointerdown', (e) => {
+            if (!overlay.classList.contains('hide')) return;
+            if (e.target.closest('button, a, .final-card, .msg-fab')) return;
+            burstPetals(e.clientX, e.clientY, isMobile ? 10 : 16);
+        });
+
+        const finalCard = document.getElementById('finalCard');
+        const msgFab = document.getElementById('msgFab');
+        let cardShown = false;
+        let intervalAuto = null;
+        const openCard = () => {
+            if (cardShown) return;
+            cardShown = true;
+            finalCard.classList.add('open');
+        };
+        msgFab.addEventListener('click', () => {
+            finalCard.classList.add('open');
+        });
+        document.getElementById('finalClose').addEventListener('click', () => {
+            finalCard.classList.remove('open');
+            msgFab.classList.add('show');
+        });
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && finalCard.classList.contains('open')) {
+                finalCard.classList.remove('open');
+                msgFab.classList.add('show');
+            }
+        });
+        setTimeout(() => {
+            if (overlay.classList.contains('hide')) {
+                openCard();
+            } else {
+                intervalAuto = setInterval(() => {
+                    if (overlay.classList.contains('hide')) {
+                        clearInterval(intervalAuto);
+                        openCard();
+                    }
+                }, 300);
+            }
+        }, 18000);
+
+        const musicBtn = document.getElementById('musicBtn');
+        const bgMusic = document.getElementById('bgMusic');
+        const src = bgMusic.querySelector('source');
+        src.addEventListener('error', () => { musicBtn.style.display = 'none'; }, true);
+        bgMusic.addEventListener('error', () => { musicBtn.style.display = 'none'; });
+        setTimeout(() => {
+            try {
+                const s = src.getAttribute('src');
+                if (!s || (bgMusic.readyState === 0 && bgMusic.error)) {
+                    musicBtn.style.display = 'none';
+                } else {
+                    musicBtn.style.display = 'flex';
+                }
+            } catch (err) {
+                musicBtn.style.display = 'none';
+            }
+        }, 1500);
+        musicBtn.addEventListener('click', () => {
+            if (bgMusic.paused) {
+                bgMusic.play().then(() => {
+                    musicBtn.classList.add('playing');
+                }).catch(() => {
+                    musicBtn.style.display = 'none';
+                });
+            } else {
+                bgMusic.pause();
+                musicBtn.classList.remove('playing');
+            }
+        });
+
+        let time = 0;
+        function animate() {
+            requestAnimationFrame(animate);
+            time += 0.008;
+
+            if (!reducedMotion) {
+                const intensity = 1.4 + Math.sin(time * 2.5) * 0.4;
+                coreGlow.material.emissiveIntensity = intensity;
+                pointLight.intensity = 0.9 + Math.sin(time * 2.2) * 0.25;
+            }
+
+            dustCloud.rotation.y = time * 0.03;
+            if (!reducedMotion) {
+                starsField.rotation.x = Math.sin(time * 0.05) * 0.05;
+                starsField.rotation.y = time * 0.01;
+            }
+            haloRing.rotation.y = time * 0.1;
+            haloRing.rotation.x = !reducedMotion ? Math.sin(time * 0.2) * 0.1 : 0;
+            pollenPoints.rotation.y = time * 0.02;
+
+            if (!reducedMotion) {
+                sunflowersGroup.children.forEach((sunflower, idx) => {
+                    sunflower.rotation.z = Math.sin(time * 1.2 + idx) * 0.03;
+                    sunflower.rotation.x = Math.cos(time * 1.0 + idx) * 0.02;
+                });
+            }
+
+            controls.update();
+            effectComposer.render();
+        }
+        animate();
+
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            effectComposer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) {
+            navigator.serviceWorker.register('sw.js').catch(() => {});
+        }
+
+        console.log('Galaxia de girasoles lista');
+    </script>
+</body>
+</html>
