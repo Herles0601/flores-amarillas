@@ -175,61 +175,6 @@
         }
         .msg-fab.show { opacity: 1; visibility: visible; }
 
-        .intro-overlay {
-            position: fixed;
-            inset: 0;
-            z-index: 60;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            text-align: center;
-            padding: 24px;
-            background: radial-gradient(circle at 50% 40%, rgba(255, 178, 71, .16), rgba(2, 2, 16, .94) 62%);
-            transition: opacity .7s ease, visibility .7s ease;
-        }
-        .intro-overlay.hide { opacity: 0; visibility: hidden; pointer-events: none; }
-        .intro-title {
-            margin: 12px 0 4px;
-            font-size: clamp(1.7rem, 6vw, 2.8rem);
-            font-weight: 800;
-            background: linear-gradient(135deg, #FFE55C, var(--amber));
-            -webkit-background-clip: text;
-            background-clip: text;
-            color: transparent;
-            -webkit-text-fill-color: transparent;
-            filter: drop-shadow(0 0 16px rgba(255, 170, 51, .3));
-        }
-        .intro-sub {
-            margin: 0 0 26px;
-            font-size: .95rem;
-            font-weight: 400;
-            color: #FFDE7A;
-            max-width: 420px;
-            line-height: 1.5;
-        }
-        .intro-btn {
-            font-family: inherit;
-            font-size: .95rem;
-            font-weight: 700;
-            letter-spacing: .5px;
-            color: #3a2406;
-            background: linear-gradient(135deg, var(--sun), var(--amber));
-            border: none;
-            border-radius: 40px;
-            padding: 14px 34px;
-            cursor: pointer;
-            box-shadow: 0 6px 22px rgba(255, 178, 71, .5);
-            transition: transform .2s ease, box-shadow .2s ease;
-        }
-        .intro-btn:hover { transform: translateY(-2px); box-shadow: 0 10px 28px rgba(255, 178, 71, .65); }
-        .intro-hint {
-            margin-top: 22px;
-            font-size: .72rem;
-            color: rgba(255, 224, 163, .8);
-            letter-spacing: .5px;
-        }
-
         .final-card {
             position: fixed;
             left: 50%;
@@ -307,26 +252,6 @@
         .final-close i::before { transform: translate(-50%, -50%) rotate(45deg); }
         .final-close i::after { transform: translate(-50%, -50%) rotate(-45deg); }
 
-        #petalLayer {
-            position: fixed;
-            inset: 0;
-            pointer-events: none;
-            z-index: 55;
-            overflow: hidden;
-        }
-        .petal {
-            position: fixed;
-            border-radius: 80% 20% 70% 30% / 60% 40% 60% 40%;
-            opacity: .95;
-            pointer-events: none;
-            box-shadow: 0 0 6px rgba(255, 210, 63, .35);
-            animation: petalFly 1.2s cubic-bezier(.22, .6, .36, 1) forwards;
-        }
-        @keyframes petalFly {
-            0% { transform: translate(0, 0) rotate(0deg) scale(1); opacity: .95; }
-            100% { transform: translate(var(--drift), var(--lift)) rotate(240deg) scale(.55); opacity: 0; }
-        }
-
         @media (max-width: 700px) {
             .greeting { top: 18px; }
             .greeting h1 { font-size: 1.5rem; }
@@ -337,13 +262,10 @@
         }
         @media (prefers-reduced-motion: reduce) {
             .greeting h1, .greeting small { animation: none; }
-            *.petal { animation-duration: .5s; }
         }
     </style>
 </head>
 <body>
-
-    <div id="petalLayer"></div>
 
     <div class="greeting">
         <div class="sun-icon"></div>
@@ -363,14 +285,6 @@
     </audio>
 
     <button class="msg-fab" id="msgFab">Tu mensaje</button>
-
-    <div class="intro-overlay" id="introOverlay">
-        <div class="sun-icon"></div>
-        <h2 class="intro-title">Abrir mi ramo</h2>
-        <p class="intro-sub">El 21 de septiembre se regala una flor amarilla: quien la recibe sabe que su amor es correspondido. Este es el tuyo.</p>
-        <button class="intro-btn" id="openRamo">Abrir mi ramo</button>
-        <p class="intro-hint" id="introHint">Toca la pantalla para deshojar flores</p>
-    </div>
 
     <div class="final-card" id="finalCard">
         <button class="final-close" id="finalClose" aria-label="Cerrar"><i></i></button>
@@ -404,9 +318,6 @@
         document.getElementById('controlHint').textContent = isMobile
             ? 'Arrastra para rotar 360°  |  Pellizca para acercar'
             : 'Arrastra para rotar 360°  |  Zoom con scroll';
-        document.getElementById('introHint').textContent = isMobile
-            ? 'Toca la pantalla para deshojar flores'
-            : 'Toca o arrastra la pantalla para deshojar flores';
 
         const scene = new THREE.Scene();
         scene.background = new THREE.Color(0x020210);
@@ -809,44 +720,9 @@
         fillLight.position.set(1, 3, 3);
         scene.add(fillLight);
 
-        const petalLayer = document.getElementById('petalLayer');
-        const petalColors = ['#FFD23F', '#FFE088', '#FFB347', '#F5A623', '#FFDE7A'];
-        function burstPetals(x, y, count) {
-            if (!petalLayer || reducedMotion) return;
-            for (let i = 0; i < count; i++) {
-                const p = document.createElement('div');
-                p.className = 'petal';
-                const size = 8 + Math.random() * 9;
-                p.style.left = (x + (Math.random() - 0.5) * 70) + 'px';
-                p.style.top = y + 'px';
-                p.style.width = size + 'px';
-                p.style.height = (size * 1.25) + 'px';
-                p.style.setProperty('--drift', ((Math.random() - 0.5) * 140) + 'px');
-                p.style.setProperty('--lift', -(50 + Math.random() * 130) + 'px');
-                p.style.animationDuration = (0.9 + Math.random() * 0.85) + 's';
-                p.style.background = petalColors[Math.floor(Math.random() * petalColors.length)];
-                petalLayer.appendChild(p);
-                setTimeout(() => p.remove(), 2000);
-            }
-        }
-
-        const overlay = document.getElementById('introOverlay');
-        const openRamoBtn = document.getElementById('openRamo');
-        openRamoBtn.addEventListener('click', () => {
-            overlay.classList.add('hide');
-            burstPetals(window.innerWidth / 2, window.innerHeight / 2, isMobile ? 26 : 40);
-        });
-
-        document.addEventListener('pointerdown', (e) => {
-            if (!overlay.classList.contains('hide')) return;
-            if (e.target.closest('button, a, .final-card, .msg-fab')) return;
-            burstPetals(e.clientX, e.clientY, isMobile ? 10 : 16);
-        });
-
         const finalCard = document.getElementById('finalCard');
         const msgFab = document.getElementById('msgFab');
         let cardShown = false;
-        let intervalAuto = null;
         const openCard = () => {
             if (cardShown) return;
             cardShown = true;
@@ -865,18 +741,7 @@
                 msgFab.classList.add('show');
             }
         });
-        setTimeout(() => {
-            if (overlay.classList.contains('hide')) {
-                openCard();
-            } else {
-                intervalAuto = setInterval(() => {
-                    if (overlay.classList.contains('hide')) {
-                        clearInterval(intervalAuto);
-                        openCard();
-                    }
-                }, 300);
-            }
-        }, 18000);
+        setTimeout(openCard, 18000);
 
         const musicBtn = document.getElementById('musicBtn');
         const bgMusic = document.getElementById('bgMusic');
