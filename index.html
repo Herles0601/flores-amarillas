@@ -109,14 +109,14 @@
         renderer.setSize(window.innerWidth, window.innerHeight);
         renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
         renderer.toneMapping = THREE.ReinhardToneMapping;
-        renderer.toneMappingExposure = 1.3;
+        renderer.toneMappingExposure = 0.95;
         document.body.appendChild(renderer.domElement);
 
         const renderScene = new RenderPass(scene, camera);
         const bloomPass = new UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 1.2, 0.4, 0.85);
-        bloomPass.threshold = 0.08;
-        bloomPass.strength = isMobile ? 0.5 : 0.85;
-        bloomPass.radius = isMobile ? 0.5 : 0.6;
+        bloomPass.threshold = 0.15;
+        bloomPass.strength = isMobile ? 0.3 : 0.45;
+        bloomPass.radius = isMobile ? 0.45 : 0.55;
         const effectComposer = new EffectComposer(renderer);
         effectComposer.addPass(renderScene);
         effectComposer.addPass(bloomPass);
@@ -287,7 +287,7 @@
                 vTexIndex = texIndex;
                 vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
                 gl_PointSize = size * ( 300.0 / ( - mvPosition.z ) ) * 0.95;
-                gl_PointSize = clamp(gl_PointSize, 7.0, 48.0);
+                gl_PointSize = clamp(gl_PointSize, 5.0, 30.0);
                 gl_Position = projectionMatrix * mvPosition;
             }
         `;
@@ -304,8 +304,8 @@
                 else texColor = texture2D(uTextures[2], gl_PointCoord);
                 if (texColor.a < 0.2) discard;
                 vec3 finalColor = vColor * texColor.rgb;
-                finalColor += vec3(0.2, 0.12, 0.04);
-                gl_FragColor = vec4(finalColor, texColor.a * 0.95);
+                finalColor += vec3(0.08, 0.05, 0.02);
+                gl_FragColor = vec4(finalColor, texColor.a * 0.85);
             }
         `;
 
@@ -321,56 +321,120 @@
         const flowerPoints = new THREE.Points(flowerGeometry, flowerMaterial);
         scene.add(flowerPoints);
 
+        const PETAL_SHAPE = new THREE.Shape();
+        PETAL_SHAPE.moveTo(0, 0);
+        PETAL_SHAPE.bezierCurveTo(0.05, 0.1, 0.24, 0.3, 0.3, 0.45);
+        PETAL_SHAPE.bezierCurveTo(0.34, 0.56, 0.31, 0.72, 0.2, 0.84);
+        PETAL_SHAPE.bezierCurveTo(0.13, 0.92, 0.06, 0.96, 0, 0.98);
+        PETAL_SHAPE.bezierCurveTo(-0.06, 0.96, -0.13, 0.92, -0.2, 0.84);
+        PETAL_SHAPE.bezierCurveTo(-0.31, 0.72, -0.34, 0.56, -0.3, 0.45);
+        PETAL_SHAPE.bezierCurveTo(-0.24, 0.3, -0.05, 0.1, 0, 0);
+        const PETAL_GEO = new THREE.ExtrudeGeometry(PETAL_SHAPE, {
+            depth: 0.035,
+            bevelEnabled: true,
+            bevelThickness: 0.02,
+            bevelSize: 0.025,
+            bevelSegments: 2,
+            steps: 1
+        });
+
+        const leafShape = new THREE.Shape();
+        leafShape.moveTo(0, 0);
+        leafShape.bezierCurveTo(0.2, -0.16, 0.6, -0.14, 0.78, -0.04);
+        leafShape.bezierCurveTo(0.6, 0.1, 0.2, 0.1, 0, 0);
+        const LEAF_GEO = new THREE.ShapeGeometry(leafShape);
+        const leafMat = new THREE.MeshStandardMaterial({ color: 0x4e9637, side: THREE.DoubleSide, roughness: 0.8 });
+
+        const seedCanvas = document.createElement('canvas');
+        seedCanvas.width = 512;
+        seedCanvas.height = 512;
+        const seedCtx = seedCanvas.getContext('2d');
+        const seedGrad = seedCtx.createRadialGradient(256, 256, 8, 256, 256, 256);
+        seedGrad.addColorStop(0, '#7a3b12');
+        seedGrad.addColorStop(0.5, '#5a2c0c');
+        seedGrad.addColorStop(1, '#3a1d07');
+        seedCtx.fillStyle = seedGrad;
+        seedCtx.fillRect(0, 0, 512, 512);
+        for (let li = 0; li < 3000; li++) {
+            const la = Math.random() * Math.PI * 2;
+            const lr = Math.sqrt(Math.random()) * 246;
+            const lx = 256 + Math.cos(la) * lr;
+            const ly = 256 + Math.sin(la) * lr;
+            seedCtx.fillStyle = Math.random() > 0.5 ? 'rgba(28,13,4,0.85)' : 'rgba(72,36,10,0.7)';
+            seedCtx.beginPath();
+            seedCtx.arc(lx, ly, 1 + Math.random() * 1.8, 0, Math.PI * 2);
+            seedCtx.fill();
+        }
+        const seedTex = new THREE.CanvasTexture(seedCanvas);
+        const centerMat = new THREE.MeshStandardMaterial({ map: seedTex, roughness: 0.9 });
+
         function createSunflower(x, z, yOffset, scaleFactor) {
             const group = new THREE.Group();
 
-            const stemGeo = new THREE.CylinderGeometry(0.12 * scaleFactor, 0.18 * scaleFactor, 1.1 * scaleFactor, 6);
+            const bend = (Math.random() - 0.5) * 0.5;
+            const sway = (Math.random() - 0.5) * 0.45;
+            const curvePts = [
+                new THREE.Vector3(0, -0.62 * scaleFactor, 0),
+                new THREE.Vector3(bend * 0.28 * scaleFactor, -0.28 * scaleFactor, sway * 0.28 * scaleFactor),
+                new THREE.Vector3(bend * scaleFactor, 0.06 * scaleFactor, sway * scaleFactor)
+            ];
+            const stemCurve = new THREE.CatmullRomCurve3(curvePts);
             const stemMat = new THREE.MeshStandardMaterial({ color: 0x5a9e4e, roughness: 0.6, metalness: 0.1 });
-            const stem = new THREE.Mesh(stemGeo, stemMat);
-            stem.position.y = -0.55 * scaleFactor;
+            const stem = new THREE.Mesh(new THREE.TubeGeometry(stemCurve, 10, 0.1 * scaleFactor, 6, false), stemMat);
             group.add(stem);
 
-            const leafMat = new THREE.MeshStandardMaterial({ color: 0x6ab04c });
-            const leaf1Geo = new THREE.BoxGeometry(0.35 * scaleFactor, 0.08 * scaleFactor, 0.2 * scaleFactor);
-            const leaf1 = new THREE.Mesh(leaf1Geo, leafMat);
-            leaf1.position.set(0.25 * scaleFactor, -0.3 * scaleFactor, 0);
-            leaf1.rotation.z = 0.5;
-            group.add(leaf1);
+            const tipDir = bend * scaleFactor - bend * 0.28 * scaleFactor;
+            const tipSway = sway * scaleFactor - sway * 0.28 * scaleFactor;
+            const tiltX = bend * 0.35;
+            const tiltZ = -sway * 0.3;
 
-            const leaf2 = new THREE.Mesh(leaf1Geo, leafMat);
-            leaf2.position.set(-0.25 * scaleFactor, -0.3 * scaleFactor, 0);
-            leaf2.rotation.z = -0.5;
-            group.add(leaf2);
-
-            const centerGeo = new THREE.SphereGeometry(0.28 * scaleFactor, 16, 16);
-            const centerMat = new THREE.MeshStandardMaterial({ color: 0xb5651d, emissive: 0x7a3e0a, emissiveIntensity: 0.25 });
-            const center = new THREE.Mesh(centerGeo, centerMat);
-            center.position.y = 0.1 * scaleFactor;
+            const center = new THREE.Mesh(new THREE.SphereGeometry(0.28 * scaleFactor, 20, 20), centerMat);
+            center.position.y = 0.04 * scaleFactor;
             group.add(center);
 
-            const petalMat = new THREE.MeshStandardMaterial({ color: 0xffcc44, emissive: 0xffaa33, emissiveIntensity: 0.2 });
-            for (let i = 0; i < 14; i++) {
-                const angle = (i / 14) * Math.PI * 2;
-                const petalGeo = new THREE.CylinderGeometry(0.22 * scaleFactor, 0.24 * scaleFactor, 0.6 * scaleFactor, 5);
-                const petal = new THREE.Mesh(petalGeo, petalMat);
-                petal.position.x = Math.cos(angle) * 0.48 * scaleFactor;
-                petal.position.z = Math.sin(angle) * 0.48 * scaleFactor;
-                petal.position.y = 0.05 * scaleFactor;
-                petal.rotation.z = angle;
-                petal.rotation.x = 0.4;
-                group.add(petal);
-            }
-            for (let i = 0; i < 10; i++) {
-                const angle = (i / 10) * Math.PI * 2 + 0.3;
-                const petalGeo = new THREE.CylinderGeometry(0.16 * scaleFactor, 0.18 * scaleFactor, 0.5 * scaleFactor, 5);
-                const petal = new THREE.Mesh(petalGeo, petalMat);
-                petal.position.x = Math.cos(angle) * 0.62 * scaleFactor;
-                petal.position.z = Math.sin(angle) * 0.62 * scaleFactor;
-                petal.position.y = 0.02 * scaleFactor;
-                petal.rotation.z = angle;
-                petal.rotation.x = 0.3;
-                group.add(petal);
-            }
+            const head = new THREE.Group();
+            head.rotation.x = (Math.random() - 0.5) * 0.22 + tiltX;
+            head.rotation.z = (Math.random() - 0.5) * 0.22 + tiltZ;
+            head.position.set(bend * scaleFactor, 0.08 * scaleFactor, sway * scaleFactor);
+            group.add(head);
+
+            const petalMat = new THREE.MeshStandardMaterial({ color: 0xffd23b, emissive: 0xb8730a, emissiveIntensity: 0.35, roughness: 0.55 });
+            petalMat.color.setHSL(0.1 + Math.random() * 0.02, 0.95, 0.5 + Math.random() * 0.1);
+
+            const rings = [
+                { count: 14, reach: 0.24, petScale: 0.8, phase: 0, tilt: 0.32 },
+                { count: 10, reach: 0.3, petScale: 1.0, phase: Math.PI / 28, tilt: 0.18 }
+            ];
+            rings.forEach(ringObj => {
+                for (let i = 0; i < ringObj.count; i++) {
+                    const theta = (i / ringObj.count) * Math.PI * 2 + ringObj.phase + (Math.random() - 0.5) * 0.05;
+                    const petal = new THREE.Mesh(PETAL_GEO, petalMat);
+                    petal.rotation.order = 'YXZ';
+                    petal.rotation.y = Math.PI / 2 - theta;
+                    petal.rotation.x = Math.PI / 2 - ringObj.tilt + (Math.random() - 0.5) * 0.1;
+                    petal.position.set(
+                        Math.cos(theta) * ringObj.reach,
+                        0.02 + (Math.random() - 0.5) * 0.02,
+                        Math.sin(theta) * ringObj.reach
+                    );
+                    petal.scale.setScalar(ringObj.petScale * scaleFactor);
+                    head.add(petal);
+                }
+            });
+
+            const leaf1 = new THREE.Mesh(LEAF_GEO, leafMat);
+            leaf1.position.set(0.24 * scaleFactor + bend * 0.55, -0.32 * scaleFactor, sway * 0.5);
+            leaf1.rotation.y = -0.9;
+            leaf1.rotation.z = 0.35 + bend * 0.3;
+            leaf1.scale.setScalar(0.9 * scaleFactor);
+            group.add(leaf1);
+
+            const leaf2 = new THREE.Mesh(LEAF_GEO, leafMat);
+            leaf2.position.set(-0.24 * scaleFactor + bend * 0.55, -0.34 * scaleFactor, sway * 0.5);
+            leaf2.rotation.y = 0.7;
+            leaf2.rotation.z = 0.3 + bend * 0.3;
+            leaf2.scale.setScalar(0.9 * scaleFactor);
+            group.add(leaf2);
 
             group.position.set(x, yOffset, z);
             group.rotation.y = Math.random() * Math.PI * 2;
@@ -378,12 +442,19 @@
         }
 
         const sunflowerPositions = [];
-        for (let i = 0; i < 12; i++) {
-            const angle = (i / 12) * Math.PI * 2;
-            const radius = 1.1 + Math.random() * 1.6;
+        for (let i = 0; i < 6; i++) {
+            const angle = (i / 6) * Math.PI * 2;
+            const radius = 2.5;
             const x = Math.cos(angle) * radius;
             const z = Math.sin(angle) * radius;
-            sunflowerPositions.push({ x, z, y: 0.1 + Math.random() * 0.7, scale: 1.1 + Math.random() * 0.45 });
+            sunflowerPositions.push({ x, z, y: 0.45, scale: 1.7 });
+        }
+        for (let i = 0; i < 8; i++) {
+            const angle = (i / 8) * Math.PI * 2 + Math.PI / 8;
+            const radius = 3.8;
+            const x = Math.cos(angle) * radius;
+            const z = Math.sin(angle) * radius;
+            sunflowerPositions.push({ x, z, y: 0.15, scale: 1.45 });
         }
         const armAngles = [0, Math.PI / 2, Math.PI, 3 * Math.PI / 2];
         for (let a = 0; a < armAngles.length; a++) {
@@ -424,9 +495,119 @@
         }
         const pollenGeo = new THREE.BufferGeometry();
         pollenGeo.setAttribute('position', new THREE.BufferAttribute(pollenPositions, 3));
-        const pollenMat = new THREE.PointsMaterial({ color: 0xffdd88, size: 0.05, transparent: true, blending: THREE.AdditiveBlending });
+        const pollenMat = new THREE.PointsMaterial({ color: 0xffdd88, size: 0.04, transparent: true, opacity: 0.6, blending: THREE.AdditiveBlending });
         const pollenPoints = new THREE.Points(pollenGeo, pollenMat);
         scene.add(pollenPoints);
+
+        const WORD_LIST = [
+            'te quiero', 'la quiero mucho', 'te amo', 'la quiero',
+            'preciosa', 'mi niña', 'que linda eres', 'eres muy hermosa',
+            'tan linda', 'eres única', 'muy bonita', 'me gusta todo de ti',
+            'me gusta pasar tiempo contigo', 'me gusta escucharla', 'me encanta verla',
+            'me gusta verla', 'me gusta mirarla', 'me encanta verte sonreír',
+            'me encanta verla sonreír', 'que mirada tan bonita',
+            'me gusta tu voz', 'me gusta su voz', 'me siento tranquilo',
+            'me siento bien con usted', 'solo con verla me pongo feliz',
+            'me gustas poquito', 'me gusta usted',
+            'quiero cuidarte', 'quiero cuidarla', 'no me voy a ir nunca',
+            'todo va a estar bien', 'me haces feliz', 'usted me hace feliz',
+            'contigo todo es mejor', 'me encanta pasar tiempo contigo',
+            'me encanta estar con usted', 'eres mi mundo', 'usted es mi mundo',
+            'mi cielo', 'mi amor', 'mi corazón', 'mi vida', 'te cuido mucho',
+            'que descanses preciosa', 'que descanse preciosa', 'buenos días preciosa',
+            'cuídate mucho', 'cuídese mucho', 'estoy aquí para ti',
+            'estoy aquí para usted', 'es mi favorita', 'me encantó',
+            'quiero estar contigo', 'quiero estar con usted', 'eres la única',
+            'usted es la única', 'me haces mucha falta', 'usted me hace mucha falta'
+        ];
+        const WORD_COUNT = isMobile ? 160 : 280;
+        const wordTexCache = {};
+        const wordSprites = [];
+        const wordBaseY = [];
+        function getWordTexture(word) {
+            if (wordTexCache[word]) return wordTexCache[word];
+            const c = document.createElement('canvas');
+            c.width = 640;
+            c.height = 128;
+            const g = c.getContext('2d');
+            g.clearRect(0, 0, c.width, c.height);
+            const maxWidth = 600;
+            let fontPx = 80;
+            g.font = "700 " + fontPx + "px 'Poppins','Quicksand',sans-serif";
+            if (g.measureText(word).width > maxWidth) {
+                fontPx = Math.max(36, Math.floor(80 * maxWidth / g.measureText(word).width));
+                g.font = "700 " + fontPx + "px 'Poppins','Quicksand',sans-serif";
+            }
+            g.textAlign = 'center';
+            g.textBaseline = 'middle';
+            g.lineJoin = 'round';
+            g.strokeStyle = 'rgba(45,22,4,0.9)';
+            g.lineWidth = 12;
+            g.strokeText(word, c.width / 2, c.height / 2);
+            const grad = g.createLinearGradient(0, 0, 0, c.height);
+            grad.addColorStop(0, '#FFF6D0');
+            grad.addColorStop(1, '#FFD25F');
+            g.fillStyle = grad;
+            g.fillText(word, c.width / 2, c.height / 2);
+            const tex = new THREE.CanvasTexture(c);
+            wordTexCache[word] = tex;
+            return tex;
+        }
+        const WORD_GA = Math.PI * (3 - Math.sqrt(5));
+        for (let i = 0; i < WORD_COUNT; i++) {
+            const word = WORD_LIST[Math.floor(Math.random() * WORD_LIST.length)];
+            const t = Math.sqrt(i / WORD_COUNT);
+            const r = 2.4 + t * 10.5;
+            const a = i * WORD_GA;
+            const x = Math.cos(a) * r;
+            const z = Math.sin(a) * r;
+            const y = (Math.random() - 0.5) * 2.6 * (0.4 + t);
+            const spr = new THREE.Sprite(new THREE.SpriteMaterial({
+                map: getWordTexture(word),
+                transparent: true,
+                depthWrite: false,
+                opacity: 0.9
+            }));
+            const s = 0.34 + 0.26 * t;
+            spr.scale.set(s * 4, s, 1);
+            spr.position.set(x, y, z);
+            scene.add(spr);
+            wordSprites.push(spr);
+            wordBaseY.push(y);
+        }
+
+        const nameCanvas = document.createElement('canvas');
+        nameCanvas.width = 2048;
+        nameCanvas.height = 768;
+        const ng = nameCanvas.getContext('2d');
+        ng.clearRect(0, 0, nameCanvas.width, nameCanvas.height);
+        ng.textAlign = 'center';
+        ng.textBaseline = 'middle';
+        ng.lineJoin = 'round';
+        ng.font = "800 230px 'Poppins','Quicksand',sans-serif";
+        ng.strokeStyle = 'rgba(30,15,3,0.8)';
+        ng.lineWidth = 26;
+        ng.strokeText('NEYDA MISSEL', nameCanvas.width / 2, 280);
+        const nGrad = ng.createLinearGradient(0, 100, 0, 460);
+        nGrad.addColorStop(0, '#FFFbe8');
+        nGrad.addColorStop(1, '#FFD25F');
+        ng.fillStyle = nGrad;
+        ng.fillText('NEYDA MISSEL', nameCanvas.width / 2, 280);
+        ng.font = "700 190px 'Poppins','Quicksand',sans-serif";
+        ng.strokeText('MOLINA VILLALOBOS', nameCanvas.width / 2, 560);
+        ng.fillText('MOLINA VILLALOBOS', nameCanvas.width / 2, 560);
+        const nameTex = new THREE.CanvasTexture(nameCanvas);
+        const nameSprite = new THREE.Sprite(new THREE.SpriteMaterial({
+            map: nameTex,
+            transparent: true,
+            depthWrite: false,
+            opacity: isMobile ? 0.24 : 0.34,
+            blending: THREE.AdditiveBlending
+        }));
+        const nameWorldW = isMobile ? 22 : 30;
+        nameSprite.scale.set(nameWorldW, nameWorldW * (768 / 2048), 1);
+        nameSprite.position.set(0, 4.5, -12);
+        scene.add(nameSprite);
 
         const starCount = isMobile ? 2500 : 4500;
         const starPositionsArr = new Float32Array(starCount * 3);
@@ -446,7 +627,7 @@
         const starGeo = new THREE.BufferGeometry();
         starGeo.setAttribute('position', new THREE.BufferAttribute(starPositionsArr, 3));
         starGeo.setAttribute('color', new THREE.BufferAttribute(starColorsArr, 3));
-        const starMatObj = new THREE.PointsMaterial({ size: 0.16, vertexColors: true, transparent: true, opacity: 0.7, blending: THREE.AdditiveBlending });
+        const starMatObj = new THREE.PointsMaterial({ size: 0.12, vertexColors: true, transparent: true, opacity: 0.45, blending: THREE.AdditiveBlending });
         const starsField = new THREE.Points(starGeo, starMatObj);
         scene.add(starsField);
 
@@ -462,20 +643,20 @@
         }
         const dustGeoObj = new THREE.BufferGeometry();
         dustGeoObj.setAttribute('position', new THREE.BufferAttribute(dustPositions, 3));
-        const dustMatObj = new THREE.PointsMaterial({ color: 0xffaa66, size: 0.055, transparent: true, opacity: 0.4, blending: THREE.AdditiveBlending });
+        const dustMatObj = new THREE.PointsMaterial({ color: 0xffaa66, size: 0.04, transparent: true, opacity: 0.2, blending: THREE.AdditiveBlending });
         const dustCloud = new THREE.Points(dustGeoObj, dustMatObj);
         scene.add(dustCloud);
 
         const coreGlow = new THREE.Mesh(
-            new THREE.SphereGeometry(1.7, 32, 32),
-            new THREE.MeshStandardMaterial({ color: 0xffaa44, emissive: 0xff6600, emissiveIntensity: 1.9, roughness: 0.2 })
+            new THREE.SphereGeometry(1.35, 32, 32),
+            new THREE.MeshStandardMaterial({ color: 0xf5b04a, emissive: 0xcc5500, emissiveIntensity: 1.15, roughness: 0.3 })
         );
         scene.add(coreGlow);
 
         const haloCount = isMobile ? 900 : 1500;
         const haloPositions = new Float32Array(haloCount * 3);
         for (let i = 0; i < haloCount; i++) {
-            const rad = 1.9 + Math.random() * 1.8;
+            const rad = 1.6 + Math.random() * 1.5;
             const theta = Math.random() * Math.PI * 2;
             const phi = Math.acos(2 * Math.random() - 1);
             haloPositions[i * 3] = rad * Math.sin(phi) * Math.cos(theta);
@@ -484,19 +665,19 @@
         }
         const haloGeo = new THREE.BufferGeometry();
         haloGeo.setAttribute('position', new THREE.BufferAttribute(haloPositions, 3));
-        const haloMatPoints = new THREE.PointsMaterial({ color: 0xffaa77, size: 0.08, blending: THREE.AdditiveBlending });
+        const haloMatPoints = new THREE.PointsMaterial({ color: 0xffaa77, size: 0.06, transparent: true, opacity: 0.6, blending: THREE.AdditiveBlending });
         const haloRing = new THREE.Points(haloGeo, haloMatPoints);
         scene.add(haloRing);
 
         const ambientLight = new THREE.AmbientLight(0x221100);
         scene.add(ambientLight);
-        const pointLight = new THREE.PointLight(0xffaa55, 1.2, 30);
+        const pointLight = new THREE.PointLight(0xffaa55, 0.8, 30);
         pointLight.position.set(2, 1.5, 2);
         scene.add(pointLight);
-        const backLight = new THREE.PointLight(0xffaa66, 0.7);
+        const backLight = new THREE.PointLight(0xffaa66, 0.45);
         backLight.position.set(-3, 2, -5);
         scene.add(backLight);
-        const fillLight = new THREE.PointLight(0xffcc88, 0.6);
+        const fillLight = new THREE.PointLight(0xffcc88, 0.4);
         fillLight.position.set(1, 3, 3);
         scene.add(fillLight);
 
@@ -536,9 +717,9 @@
             time += 0.008;
 
             if (!reducedMotion) {
-                const intensity = 1.4 + Math.sin(time * 2.5) * 0.4;
+                const intensity = 1.05 + Math.sin(time * 2.5) * 0.25;
                 coreGlow.material.emissiveIntensity = intensity;
-                pointLight.intensity = 0.9 + Math.sin(time * 2.2) * 0.25;
+                pointLight.intensity = 0.8 + Math.sin(time * 2.2) * 0.2;
             }
 
             dustCloud.rotation.y = time * 0.03;
@@ -549,6 +730,10 @@
             haloRing.rotation.y = time * 0.1;
             haloRing.rotation.x = !reducedMotion ? Math.sin(time * 0.2) * 0.1 : 0;
             pollenPoints.rotation.y = time * 0.02;
+
+            for (let i = 0; i < wordSprites.length; i++) {
+                wordSprites[i].position.y = wordBaseY[i] + Math.sin(time * 0.9 + i) * 0.12;
+            }
 
             if (!reducedMotion) {
                 sunflowersGroup.children.forEach((sunflower, idx) => {
